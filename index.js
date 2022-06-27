@@ -26,6 +26,18 @@ app.get('/faces', async (req, res) => {
     await faceapi.nets.faceLandmark68Net.loadFromDisk(path.join(__dirname, 'models'));
     await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
 
+
+    //  accordingly for the other models:
+    await faceapi.loadTinyFaceDetectorModel('/models')
+    await faceapi.loadMtcnnModel('/models')
+    await faceapi.loadFaceLandmarkModel('/models')
+    await faceapi.loadFaceLandmarkTinyModel('/models')
+    await faceapi.loadFaceRecognitionModel('/models')
+    await faceapi.loadFaceExpressionModel('/models')
+
+
+
+
     getRefImage(url, function (refImage) {
         //res.set("Content-Type", "image/jpeg");
         //  res.send(refImage)
@@ -84,7 +96,8 @@ async function loadLabeledImages(images) {
             const descriptions = []
             try {
                 const img = await canvas.loadImage(label.image.sizes.medium)
-                const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor()
+                
+                const detections = await faceapi.detectAllFaces(img)
                 if (detections != undefined && detections.descriptor != undefined) {
                     descriptions.push(detections.descriptor)
                     loadedFaces.push(new faceapi.LabeledFaceDescriptors(label.name, descriptions))
