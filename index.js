@@ -5,8 +5,14 @@ const fetch = require('cross-fetch');
 const request = require('request');
 const canvas = require("canvas");
 const urllib = require('urllib')
-const tf = require('@tensorflow/tfjs')
+const tf = require('@tensorflow/tfjs');
+const https = require('https');
+const http = require('http');
+const fs = require('fs');
+const { cos } = require('@tensorflow/tfjs');
 require('@tensorflow/tfjs')
+const base64 = require('node-base64-image')
+const testData = require("./test.json");
 //const tf = require('@tensorflow/tfjs');
 const { Canvas, Image, ImageData } = canvas;
 faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
@@ -19,71 +25,88 @@ let refImage = ''
 let loadedFaces = []
 //
 app.get('/', async (req, res) => {
+  const url = 'http://localhost:8888/lime-pictures-photo-library/wp/wp-content/uploads/2022/04/christian-buehner-DItYlc26zVI-unsplash-300x200.jpg';
+  const dataUrl = 'http://localhost:8888/lime-pictures-photo-library/wp/wp-json/faces'
+  await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
+  await faceapi.nets.faceLandmark68Net.loadFromDisk(path.join(__dirname, 'models'));
+  await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
+
+  let refImage = await getRefImage(url)
+  loadFacesFromDb(refImage, res)
 
 
-    const url = 'https://lp-picture-library.greenwich-design-projects.co.uk/wp-content/uploads/2022/04/chloe-brockett-crop-300x300.jpg';
-    const dataUrl = 'http://localhost:8888/lime-pictures-photo-library/wp/wp-json/faces'
-    await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
-    await faceapi.nets.faceLandmark68Net.loadFromDisk(path.join(__dirname, 'models'));
-    await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
-    getRefImage(url, (refImage) => {
-        loadImageData(dataUrl, (faceData) => {
-            loadFacesFromDb(faceData).then(getFaces(refImage, res)).then((results) => {
-                res.send('found:', results)
-            })
 
-            //   loadFacesFromDb(faceData)
-            //   res.send(faceData)
-            // loadLabeledImages(loaded).then((go) => {
-            //     console.log(loadedFaces)
-            // })
-        })
-    })
+
+  // http.get(dataUrl, (ress) => {
+  //   let body = "";
+
+  //   ress.on("data", (chunk) => {
+  //     res.header('Content-Type', 'application/json');
+  //     res.send(JSON.parse(JSON.parse(chunk))[0])
+  //   });
+
+  // }).on("error", (error) => {
+  //   console.error(error.message);z
+  // });
 })
 
+async function loadFacesFromDb(blob, res) {
 
-async function getFaces(img, res) {
+  // save lise 
 
-   res.send('dne')
+  // const jsonStr = JSON.stringify(resultsRef.map(res => res.descriptor ))
+  // fs.writeFileSync('./descriptor.json',jsonStr)
 
+
+  const url = 'https://lp-picture-library.greenwich-design-projects.co.uk/wp-content/uploads/2022/04/chloe-brockett-crop-300x300.jpg';
+  const image = await canvas.loadImage(url);
+  const str = fs.readFileSync('./test.json')
+  let obj = new Array(Object.values(JSON.parse(str.toString())))
+  let arrayDescriptor = new Array(obj[0].length)
+  let i = 0
+  obj[0].forEach((entry) => {
+    arrayDescriptor[i++] = new Float32Array(Object.values(entry))
+  });
+
+  const faceMatcher = await new faceapi.FaceMatcher(arrayDescriptor) // this object is definatly the problerm
+  console.log('faceMatcher', faceMatcher) // mst likely incorrect formating or labeling
+  const displaySize = { width: image.width, height: image.height }
+  faceapi.matchDimensions(canvas, displaySize)
+  const detections = await faceapi.detectAllFaces(image).withFaceLandmarks().withFaceDescriptors()
+  console.log('detections', detections)
+  const resizedDetections = await faceapi.resizeResults(detections, displaySize)
+  console.log('resizedDetections', resizedDetections)
+  const results = await resizedDetections.map((d) => faceMatcher.findBestMatch(d.descriptor))
+  console.log(results)
 
 }
 
-async function loadFacesFromDb(data) {
-    //   await loadLabeledImages();
-    let f = await JSON.parse(JSON.parse(data))
-    let a = []; await f.map((item, index) => {
-        if (item._descriptors[1] != undefined) {
-            let arr = []; arr[0] = new Float32Array(Object.keys(item._descriptors[0]).length);
-            arr[1] = new Float32Array(Object.keys(item._descriptors[1]).length);
-            for (let j = 0; j < 2; j++) { for (let i = 0; i < Object.keys(item._descriptors[j]).length; i++) { arr[j][i] = item._descriptors[j][i]; } } a[index] = new faceapi.LabeledFaceDescriptors(item._label, arr);
-        }
-    });
-
-    return true
-}
 
 function loadImageData(urlToCall, callback) {
-    urllib.request(urlToCall, { json: true, wd: 'nodejs' }, function (err, data, response) {
-        var statusCode = response.statusCode;
-        let finalData = data
-        // call the function that needs the value
-        callback(finalData);
-        // we are done
-        return;
-    });
+  console.log('loadImageData')
+  urllib.request(urlToCall, { json: true, wd: 'nodejs' }, function (err, data, response) {
+    var statusCode = response.statusCode;
+    let finalData = data
+    // call the function that needs the value
+    callback(finalData);
+    // we are done
+    return;
+  });
 }
 
 
-function getRefImage(urlToCall, callback) {
-    urllib.request(urlToCall, { wd: 'nodejs' }, function (err, data, response) {
-        var statusCode = response.statusCode;
-        let finalData = data
-        // call the function that needs the value
-        callback(finalData);
-        // we are done
-        return;
-    });
+async function getRefImage(urlToCall,) {
+  console.log('getRefImage')
+  const url = urlToCall;
+  const options = {
+    string: true,
+    headers: {
+      "User-Agent": "my-app"
+    }
+  };
+  // writing to file named 'example.jpg'
+  const image = await base64.encode(url, options);
+  return image
 }
 
 
@@ -171,7 +194,7 @@ function getRefImage(urlToCall, callback) {
 
 
 app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`)
+  console.log(`Example app listening on port ${port}`)
 })
 
 
