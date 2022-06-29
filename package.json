@@ -1,7 +1,6 @@
 {
   "name": "face-server",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -25,5 +24,15 @@
     "path": "^0.12.7",
     "request": "^2.88.2",
     "urllib": "^2.38.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simonproudfoot/face-recongniton.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/simonproudfoot/face-recongniton/issues"
+  },
+  "homepage": "https://github.com/simonproudfoot/face-recongniton#readme",
+  "description": ""
 }
