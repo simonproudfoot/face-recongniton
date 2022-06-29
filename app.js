@@ -6,6 +6,7 @@ const fetch = require('cross-fetch');
 const canvas = require("canvas");
 const urllib = require('urllib')
 const tf = require('@tensorflow/tfjs');
+var cors = require('cors')
 // const https = require('https');
 // const http = require('http');
 const fs = require('fs');
@@ -18,7 +19,7 @@ faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
 require('@tensorflow/tfjs-node');
 const app = express()
 let port = process.env.PORT || 3000
-
+app.use(cors())
 // FIND FACES
 app.get('/find', async (req, res) => {
   const url = req.query.imgUrl
