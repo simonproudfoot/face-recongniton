@@ -24,61 +24,95 @@ let allFaces = []
 let refImage = ''
 let loadedFaces = []
 //
+
+app.get('/updateFaces', async (req, res) => {
+  res.send('update local json file here')
+})
+
 app.get('/', async (req, res) => {
   const url = 'http://localhost:8888/lime-pictures-photo-library/wp/wp-content/uploads/2022/04/christian-buehner-DItYlc26zVI-unsplash-300x200.jpg';
   const dataUrl = 'http://localhost:8888/lime-pictures-photo-library/wp/wp-json/faces'
   await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
   await faceapi.nets.faceLandmark68Net.loadFromDisk(path.join(__dirname, 'models'));
   await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
-
-  let refImage = await getRefImage(url)
   loadFacesFromDb(refImage, res)
-
-
-
-
-  // http.get(dataUrl, (ress) => {
-  //   let body = "";
-
-  //   ress.on("data", (chunk) => {
-  //     res.header('Content-Type', 'application/json');
-  //     res.send(JSON.parse(JSON.parse(chunk))[0])
-  //   });
-
-  // }).on("error", (error) => {
-  //   console.error(error.message);z
-  // });
 })
 
+
+// Global variable
+var faceMatcher;
+
+// Create Face Matcher
+async function createFaceMatcher(data) {
+  console.log('createFaceMatcher')
+  const labeledFaceDescriptors = await Promise.all(data._labeledDescriptors.map(className => {
+    const descriptors = [];
+    for (var i = 0; i < className._descriptors.length; i++) {
+      descriptors.push(className._descriptors[i]);
+    }
+    return new faceapi.LabeledFaceDescriptors(className._label, descriptors);
+  }))
+  return new faceapi.FaceMatcher(labeledFaceDescriptors);
+}
+
+// Load json to backend
 async function loadFacesFromDb(blob, res) {
-
-  // save lise 
-
-  // const jsonStr = JSON.stringify(resultsRef.map(res => res.descriptor ))
-  // fs.writeFileSync('./descriptor.json',jsonStr)
-
-
-  const url = 'https://lp-picture-library.greenwich-design-projects.co.uk/wp-content/uploads/2022/04/chloe-brockett-crop-300x300.jpg';
-  const image = await canvas.loadImage(url);
-  const str = fs.readFileSync('./test.json')
-  let obj = new Array(Object.values(JSON.parse(str.toString())))
-  let arrayDescriptor = new Array(obj[0].length)
-  let i = 0
-  obj[0].forEach((entry) => {
-    arrayDescriptor[i++] = new Float32Array(Object.values(entry))
+  console.log('createFaceMatcher')
+  fs.readFile('./test.json', async function (err, data) {
+    if (err) {
+      console.log(err);
+    }
+    var content = JSON.parse(data);
+    res.send(content)
+    for (var x = 0; x < content['_labeledDescriptors'].length; x++) {
+      for (var y = 0; y < content['_labeledDescriptors'][x]['_descriptors'].length; y++) {
+        var results = Object.values(content['_labeledDescriptors'][x]['_descriptors'][y]);
+        content._labeledDescriptors[x]._descriptors[y] = new Float32Array(results);
+      }
+    }
+    faceMatcher = await createFaceMatcher(content);
+    console.log(faceMatcher)
   });
+}
 
-  const faceMatcher = await new faceapi.FaceMatcher(arrayDescriptor) // this object is definatly the problerm
-  console.log('faceMatcher', faceMatcher) // mst likely incorrect formating or labeling
-  const displaySize = { width: image.width, height: image.height }
-  faceapi.matchDimensions(canvas, displaySize)
-  const detections = await faceapi.detectAllFaces(image).withFaceLandmarks().withFaceDescriptors()
-  console.log('detections', detections)
-  const resizedDetections = await faceapi.resizeResults(detections, displaySize)
-  console.log('resizedDetections', resizedDetections)
-  const results = await resizedDetections.map((d) => faceMatcher.findBestMatch(d.descriptor))
-  console.log(results)
+// async function loadFacesFromDb(blob, res) {
+//   const url = 'https://lp-picture-library.greenwich-design-projects.co.uk/wp-content/uploads/2022/04/chloe-brockett-crop-300x300.jpg';
+//   const image = await canvas.loadImage(url);
+//   const str = fs.readFileSync('./test.json')
 
+
+//   // let obj = new Array(Object.values(JSON.parse(str.toString())))
+//   // let arrayDescriptor = new Array(obj[0].length)
+//   // let i = 0
+//   // obj[0].forEach((entry) => {
+//   //   arrayDescriptor[i++] = new Float32Array(Object.values(entry))
+//   // });
+
+//   // const faceMatcher = await new faceapi.FaceMatcher(arrayDescriptor) // this object is definatly the problerm
+//   // console.log('faceMatcher', faceMatcher) // mst likely incorrect formating or labeling
+//   // const displaySize = { width: image.width, height: image.height }
+//   // faceapi.matchDimensions(canvas, displaySize)
+//   // const detections = await faceapi.detectAllFaces(image).withFaceLandmarks().withFaceDescriptors()
+//   // console.log('detections', detections)
+//   // const resizedDetections = await faceapi.resizeResults(detections, displaySize)
+//   // console.log('resizedDetections', resizedDetections)
+//   // const results = await resizedDetections.map((d) => faceMatcher.findBestMatch(d.descriptor))
+//   // console.log(results)
+
+
+
+
+// }
+
+async function createFaceMatcher(data) {
+  const labeledFaceDescriptors = await Promise.all(data.parent.map(className => {
+    const descriptors = [];
+    for (var i = 0; i < className._descriptors.length; i++) {
+      descriptors.push(className._descriptors[i]);
+    }
+    return new faceapi.LabeledFaceDescriptors(className._label, descriptors);
+  }))
+  return new faceapi.FaceMatcher(labeledFaceDescriptors);
 }
 
 
@@ -94,20 +128,19 @@ function loadImageData(urlToCall, callback) {
   });
 }
 
-
-async function getRefImage(urlToCall,) {
-  console.log('getRefImage')
-  const url = urlToCall;
-  const options = {
-    string: true,
-    headers: {
-      "User-Agent": "my-app"
-    }
-  };
-  // writing to file named 'example.jpg'
-  const image = await base64.encode(url, options);
-  return image
-}
+// async function getRefImage(urlToCall,) {
+//   console.log('getRefImage')
+//   const url = urlToCall;
+//   const options = {
+//     string: true,
+//     headers: {
+//       "User-Agent": "my-app"
+//     }
+//   };
+//   // writing to file named 'example.jpg'
+//   const image = await base64.encode(url, options);
+//   return image
+// }
 
 
 
