@@ -26,7 +26,7 @@ async function testResponse(loadedData) {
   await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
   await faceapi.nets.faceLandmark68Net.loadFromDisk(path.join(__dirname, 'models'));
   await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
-  const url = 'https://lp-picture-library.greenwich-design-projects.co.uk/wp-content/uploads/2022/05/jonas-khan-headshot-239x300.jpg';
+  const url = 'https://lp-picture-library.greenwich-design-projects.co.uk/wp-content/uploads/2022/04/CelebsGoDating_2021_S2_FINAL_RGB-1000x590.jpg';
   const image = await canvas.loadImage(url);
   let content = JSON.parse(loadedData)
   const labeledFaceDescriptors = await Promise.all(content.map(className => {
@@ -37,21 +37,16 @@ async function testResponse(loadedData) {
         descriptors.push(new Float32Array(className.descriptors[i]));
       }
       // let float = new Float32Array(descriptors)
-       console.log(className.label)
+      console.log(className.label)
       return new faceapi.LabeledFaceDescriptors(className.label, descriptors);
     }
-
-
   }))
 
-  const faceMatcher = await new faceapi.FaceMatcher(labeledFaceDescriptors[0], 0.9) // this object is definatly the problerm
-  //console.log(faceMatcher)
+  const faceMatcher = new faceapi.FaceMatcher(
+    labeledFaceDescriptors.filter(x => x != undefined)
+  );
 
-
-
-
-
-
+  console.log(faceMatcher)
 
   // console.log('faceMatcher', faceMatcher) // mst likely incorrect formating or labeling
   const displaySize = { width: image.width, height: image.height }
@@ -61,12 +56,10 @@ async function testResponse(loadedData) {
   const resizedDetections = await faceapi.resizeResults(detections, displaySize)
   // console.log('resizedDetections', resizedDetections)
   const results = await resizedDetections.map((d) => faceMatcher.findBestMatch(d.descriptor))
-  console.log(results)
-
+  console.log('results:', results)
 }
 
 openFile()
-
 
 async function openFile(data) {
   //var urlToCall = './savedFaceSearch.json';
