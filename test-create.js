@@ -32,10 +32,8 @@ async function testResponse() {
   console.log('searching image', image)
   try {
     const labeledFaceDescriptors = await loadLabeledImages();
-    console.log('labeledFaceDescriptors: ', labeledFaceDescriptors);
-
     const faceMatcher = new faceapi.FaceMatcher(
-      labeledFaceDescriptors.filter(x=>x !=undefined),
+      labeledFaceDescriptors.filter(x => x != undefined),
       0.6
     );
     console.log('image', image);
@@ -48,6 +46,13 @@ async function testResponse() {
       detections,
       displaySize
     );
+
+
+    // const labeledFaceDescriptors = await loadLabeledImages(); // localStorage.setItem("data",JSON.stringify(labeledFaceDescriptors))
+
+    saveToFile(labeledFaceDescriptors)
+
+
     const results = resizedDetections.map((d) =>
       d.descriptor && faceMatcher.findBestMatch(d.descriptor)
     );
@@ -74,10 +79,7 @@ async function testResponse() {
           console.log('process image:', img)
           const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor()
           if (detections != undefined && detections.descriptor != undefined && label.name != undefined) {
-
             descriptions.push(detections.descriptor)
-        //    console.log('d', detections.descriptor)
-            //loadedFaces.push(new faceapi.LabeledFaceDescriptors(label.name, descriptions).toJson)
             return new faceapi.LabeledFaceDescriptors(label.name, descriptions);
           }
         } catch (error) {
@@ -89,6 +91,25 @@ async function testResponse() {
 }
 
 testResponse()
+
+
+async function saveToFile(data) {
+  var wstream = fs.createWriteStream('savedFaceSearch.json');
+
+
+  //var urlToCall = './savedFaceSearch.json';
+
+
+  wstream.write(JSON.stringify(data));
+  wstream.end();
+}
+
+
+
+
+
+
+
 
 // app.listen(3000, () => {
 //   console.log('app running on port: 3000');

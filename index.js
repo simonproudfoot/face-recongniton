@@ -162,8 +162,6 @@ function loadImageData(urlToCall, callback) {
 
 
 
-
-
 // async function loadAllImages() {
 //     // try {
 //     //     await loadLabeledImages();
