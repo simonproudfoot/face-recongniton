@@ -17,7 +17,7 @@ const { Canvas, Image, ImageData } = canvas;
 faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
 require('@tensorflow/tfjs-node');
 const app = express()
-const port = 3000
+let port = process.env.PORT || 3000
 
 // FIND FACES
 app.get('/find', async (req, res) => {
@@ -96,6 +96,6 @@ async function saveToFile(data) {
 }
 
 
-app.listen(3000, () => {
+app.listen(port, () => {
   console.log('app running on port: 3000');
 });
