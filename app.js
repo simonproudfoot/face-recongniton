@@ -44,8 +44,9 @@ app.get('/find', async (req, res) => {
     labeledFaceDescriptors.filter(x => x != undefined)
   );
   const displaySize = { width: image.width, height: image.height }
+  let faceDetectorOptions = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 });
   faceapi.matchDimensions(canvas, displaySize)
-  const detections = await faceapi.detectAllFaces(image).withFaceLandmarks(true).withFaceDescriptors()
+  const detections = await faceapi.detectAllFaces(image, faceDetectorOptions).withFaceLandmarks(true).withFaceDescriptors()
   const resizedDetections = await faceapi.resizeResults(detections, displaySize)
   const results = await resizedDetections.map((d) => faceMatcher.findBestMatch(d.descriptor))
   res.setHeader('Content-Type', 'application/json');
