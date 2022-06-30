@@ -57,6 +57,7 @@ app.get('/find', async (req, res) => {
 
 // UPDATE DATABASE
 app.get('/update', async (req, res) => {
+  faceapi.tf.engine().startScope();
   const url = req.query.imgUrl
   await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
   // await faceapi.nets.faceLandmark68Net.loadFromDisk(path.join(__dirname, 'models'));
@@ -71,6 +72,7 @@ app.get('/update', async (req, res) => {
   console.log('saved')
   res.setHeader('Content-Type', 'application/json');
   res.end(JSON.stringify({ result: 'done' }));
+  faceapi.tf.engine().endScope();
 })
 
 
