@@ -1,4 +1,4 @@
-const faceapi = require('face-api.js')
+const faceapi = require('@vladmandic/face-api');
 const express = require('express')
 const path = require('node:path');
 const fetch = require('cross-fetch');
@@ -6,6 +6,7 @@ const fetch = require('cross-fetch');
 const canvas = require("canvas");
 const urllib = require('urllib')
 const tf = require('@tensorflow/tfjs');
+
 // const https = require('https');
 // const http = require('http');
 const fs = require('fs');
