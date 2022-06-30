@@ -1,4 +1,4 @@
-const faceapi = require('face-api.js')
+const faceapi = require('@vladmandic/face-api');
 const express = require('express')
 const path = require('node:path');
 const fetch = require('cross-fetch');
