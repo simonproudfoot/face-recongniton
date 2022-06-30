@@ -24,6 +24,7 @@ app.use(cors())
 app.get('/find', async (req, res) => {
   faceapi.tf.engine().startScope();
   const url = req.query.imgUrl
+  // if memory leak continiues. try moving these models out of function
   let faceRecognitionNet = await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
   let ssdMobilenetv1 = await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
   let faceLandmark68TinyNet = await faceapi.nets.faceLandmark68TinyNet.loadFromDisk(path.join(__dirname, 'models'));
@@ -57,6 +58,8 @@ app.get('/find', async (req, res) => {
 
 // UPDATE DATABASE
 app.get('/update', async (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(JSON.stringify({ result: 'done' }));
   faceapi.tf.engine().startScope();
   const url = req.query.imgUrl
   await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
@@ -70,8 +73,6 @@ app.get('/update', async (req, res) => {
   );
   saveToFile(labeledFaceDescriptors)
   console.log('saved')
-  res.setHeader('Content-Type', 'application/json');
-  res.end(JSON.stringify({ result: 'done' }));
   faceapi.tf.engine().endScope();
 })
 
