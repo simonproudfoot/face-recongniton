@@ -24,8 +24,10 @@ app.use(cors())
 app.get('/find', async (req, res) => {
   const url = req.query.imgUrl
   await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
-  await faceapi.nets.faceLandmark68Net.loadFromDisk(path.join(__dirname, 'models'));
+ // await faceapi.nets.faceLandmark68Net.loadFromDisk(path.join(__dirname, 'models'));
   await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
+  await faceapi.nets.faceLandmark68TinyNet.loadFromDisk(path.join(__dirname, 'models'));
+  
   let data = await savedData
   const image = await canvas.loadImage(url);
   let content = data
@@ -43,7 +45,7 @@ app.get('/find', async (req, res) => {
   );
   const displaySize = { width: image.width, height: image.height }
   faceapi.matchDimensions(canvas, displaySize)
-  const detections = await faceapi.detectAllFaces(image).withFaceLandmarks().withFaceDescriptors()
+  const detections = await faceapi.detectAllFaces(image).withFaceLandmarks(true).withFaceDescriptors()
   const resizedDetections = await faceapi.resizeResults(detections, displaySize)
   const results = await resizedDetections.map((d) => faceMatcher.findBestMatch(d.descriptor))
   res.setHeader('Content-Type', 'application/json');
@@ -53,9 +55,11 @@ app.get('/find', async (req, res) => {
 
 // UPDATE DATABASE
 app.get('/update', async (req, res) => {
+  const url = req.query.imgUrl
   await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
-  await faceapi.nets.faceLandmark68Net.loadFromDisk(path.join(__dirname, 'models'));
+ // await faceapi.nets.faceLandmark68Net.loadFromDisk(path.join(__dirname, 'models'));
   await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
+  await faceapi.nets.faceLandmark68TinyNet.loadFromDisk(path.join(__dirname, 'models'));
   const labeledFaceDescriptors = await loadLabeledImages();
   const faceMatcher = new faceapi.FaceMatcher(
     labeledFaceDescriptors.filter(x => x != undefined),
@@ -69,6 +73,7 @@ app.get('/update', async (req, res) => {
 
 
 async function loadLabeledImages() {
+  
   const data = await fetch('https://lp-picture-library.greenwich-design-projects.co.uk/wp-json/acf/v3/options/face-library').then((data) => data.json());
   const images = await data.acf['face-library']
   return Promise.all(
@@ -77,7 +82,7 @@ async function loadLabeledImages() {
       try {
         const img = await canvas.loadImage(label.image.sizes.medium)
         console.log('process image:', img)
-        const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor()
+        const detections = await faceapi.detectSingleFace(img).withFaceLandmarks(true).withFaceDescriptor()
         if (detections != undefined && detections.descriptor != undefined && label.name != undefined) {
           descriptions.push(detections.descriptor)
           return new faceapi.LabeledFaceDescriptors(label.name, descriptions);
