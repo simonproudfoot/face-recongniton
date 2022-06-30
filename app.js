@@ -5,29 +5,28 @@ const fetch = require('cross-fetch');
 //const request = require('request');
 const canvas = require("canvas");
 const urllib = require('urllib')
-//const tf = require('@tensorflow/tfjs');
+const tf = require('@tensorflow/tfjs');
 var cors = require('cors')
 // const https = require('https');
 // const http = require('http');
 const fs = require('fs');
-//const { cos } = require('@tensorflow/tfjs');
-//require('@tensorflow/tfjs')
+const { cos } = require('@tensorflow/tfjs');
+require('@tensorflow/tfjs')
 const base64 = require('node-base64-image')
 const savedData = require("./savedFaceSearch.json");
 const { Canvas, Image, ImageData } = canvas;
 faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
-//require('@tensorflow/tfjs-node');
+require('@tensorflow/tfjs-node');
 const app = express()
 let port = process.env.PORT || 3000
 app.use(cors())
 // FIND FACES
 app.get('/find', async (req, res) => {
+  faceapi.tf.engine().startScope();
   const url = req.query.imgUrl
-  await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
- // await faceapi.nets.faceLandmark68Net.loadFromDisk(path.join(__dirname, 'models'));
-  await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
-  await faceapi.nets.faceLandmark68TinyNet.loadFromDisk(path.join(__dirname, 'models'));
-  
+  let faceRecognitionNet = await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
+  let ssdMobilenetv1 = await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
+  let faceLandmark68TinyNet = await faceapi.nets.faceLandmark68TinyNet.loadFromDisk(path.join(__dirname, 'models'));
   let data = await savedData
   const image = await canvas.loadImage(url);
   let content = data
@@ -49,8 +48,10 @@ app.get('/find', async (req, res) => {
   const detections = await faceapi.detectAllFaces(image, faceDetectorOptions).withFaceLandmarks(true).withFaceDescriptors()
   const resizedDetections = await faceapi.resizeResults(detections, displaySize)
   const results = await resizedDetections.map((d) => faceMatcher.findBestMatch(d.descriptor))
+
   res.setHeader('Content-Type', 'application/json');
   res.end(JSON.stringify(results));
+  faceapi.tf.engine().endScope();
 })
 
 
@@ -58,7 +59,7 @@ app.get('/find', async (req, res) => {
 app.get('/update', async (req, res) => {
   const url = req.query.imgUrl
   await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
- // await faceapi.nets.faceLandmark68Net.loadFromDisk(path.join(__dirname, 'models'));
+  // await faceapi.nets.faceLandmark68Net.loadFromDisk(path.join(__dirname, 'models'));
   await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
   await faceapi.nets.faceLandmark68TinyNet.loadFromDisk(path.join(__dirname, 'models'));
   const labeledFaceDescriptors = await loadLabeledImages();
@@ -74,7 +75,7 @@ app.get('/update', async (req, res) => {
 
 
 async function loadLabeledImages() {
-  
+
   const data = await fetch('https://lp-picture-library.greenwich-design-projects.co.uk/wp-json/acf/v3/options/face-library').then((data) => data.json());
   const images = await data.acf['face-library']
   return Promise.all(
