@@ -5,18 +5,18 @@ const fetch = require('cross-fetch');
 //const request = require('request');
 const canvas = require("canvas");
 const urllib = require('urllib')
-const tf = require('@tensorflow/tfjs');
+//const tf = require('@tensorflow/tfjs');
 var cors = require('cors')
 // const https = require('https');
 // const http = require('http');
 const fs = require('fs');
-const { cos } = require('@tensorflow/tfjs');
-require('@tensorflow/tfjs')
+//const { cos } = require('@tensorflow/tfjs');
+//require('@tensorflow/tfjs')
 const base64 = require('node-base64-image')
 const savedData = require("./savedFaceSearch.json");
 const { Canvas, Image, ImageData } = canvas;
 faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
-require('@tensorflow/tfjs-node');
+//require('@tensorflow/tfjs-node');
 const app = express()
 let port = process.env.PORT || 3000
 app.use(cors())
