@@ -64,10 +64,10 @@ console.log(getFullPath)
 
 // UPDATE DATABASE
 app.get('/update', async (req, res) => {
-  var origin = req.headers.origin;
-  console.log('RECEIVED FROM')
+  let from = req.query.from;
+  console.log('RECEIVED FROM', from)
 
-  res.send(JSON.stringify({ result: origin }));
+  res.send(JSON.stringify({ result: from }));
 
 
 
