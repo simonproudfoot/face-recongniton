@@ -57,41 +57,35 @@ app.get('/find', async (req, res) => {
 
 
 app.get('/test', async (req, res) => {
-   var getFullPath = path.join("public",req.path);
+  var getFullPath = path.join("public", req.path);
 
-console.log(getFullPath)
+  console.log(getFullPath)
 })
-
 // UPDATE DATABASE
 app.get('/update', async (req, res) => {
   let from = req.query.from;
   console.log('RECEIVED FROM', from)
-
-  res.send(JSON.stringify({ result: from }));
-
-
-
-  // res.setHeader('Content-Type', 'application/json');
-  // res.send(JSON.stringify({ result: 'done' }));
-  // faceapi.tf.engine().startScope();
-  // const url = req.query.imgUrl
-  // await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
-  // // await faceapi.nets.faceLandmark68Net.loadFromDisk(path.join(__dirname, 'models'));
-  // await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
-  // await faceapi.nets.faceLandmark68TinyNet.loadFromDisk(path.join(__dirname, 'models'));
-  // const labeledFaceDescriptors = await loadLabeledImages();
-  // const faceMatcher = new faceapi.FaceMatcher(
-  //   labeledFaceDescriptors.filter(x => x != undefined),
-  //   0.6
-  // );
-  // saveToFile(labeledFaceDescriptors)
-  // console.log('saved')
-  // faceapi.tf.engine().endScope();
+  res.send('UPDATING!');
+  res.setHeader('Content-Type', 'application/json');
+  faceapi.tf.engine().startScope();
+  const url = req.query.imgUrl
+  await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
+  // await faceapi.nets.faceLandmark68Net.loadFromDisk(path.join(__dirname, 'models'));
+  await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
+  await faceapi.nets.faceLandmark68TinyNet.loadFromDisk(path.join(__dirname, 'models'));
+  const labeledFaceDescriptors = await loadLabeledImages(from);
+  const faceMatcher = new faceapi.FaceMatcher(
+    labeledFaceDescriptors.filter(x => x != undefined),
+    0.6
+  );
+  saveToFile(labeledFaceDescriptors)
+  console.log('saved')
+  faceapi.tf.engine().endScope();
 })
 
 
 async function loadLabeledImages(url) {
-  const data = await fetch('https://lp-picture-library.greenwich-design-projects.co.uk/wp-json/acf/v3/options/face-library').then((data) => data.json());
+  const data = await fetch(url + '/wp-json/acf/v3/options/face-library').then((data) => data.json());
   const images = await data.acf['face-library']
   return Promise.all(
     images.map(async label => {
