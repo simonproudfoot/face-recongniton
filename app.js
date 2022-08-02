@@ -66,22 +66,27 @@ console.log(getFullPath)
 app.get('/update', async (req, res) => {
   var origin = req.headers.origin;
   console.log('RECEIVED FROM')
-  res.setHeader('Content-Type', 'application/json');
-  res.send(JSON.stringify({ result: 'done' }));
-  faceapi.tf.engine().startScope();
-  const url = req.query.imgUrl
-  await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
-  // await faceapi.nets.faceLandmark68Net.loadFromDisk(path.join(__dirname, 'models'));
-  await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
-  await faceapi.nets.faceLandmark68TinyNet.loadFromDisk(path.join(__dirname, 'models'));
-  const labeledFaceDescriptors = await loadLabeledImages();
-  const faceMatcher = new faceapi.FaceMatcher(
-    labeledFaceDescriptors.filter(x => x != undefined),
-    0.6
-  );
-  saveToFile(labeledFaceDescriptors)
-  console.log('saved')
-  faceapi.tf.engine().endScope();
+
+  res.send(JSON.stringify({ result: origin }));
+
+
+
+  // res.setHeader('Content-Type', 'application/json');
+  // res.send(JSON.stringify({ result: 'done' }));
+  // faceapi.tf.engine().startScope();
+  // const url = req.query.imgUrl
+  // await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
+  // // await faceapi.nets.faceLandmark68Net.loadFromDisk(path.join(__dirname, 'models'));
+  // await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
+  // await faceapi.nets.faceLandmark68TinyNet.loadFromDisk(path.join(__dirname, 'models'));
+  // const labeledFaceDescriptors = await loadLabeledImages();
+  // const faceMatcher = new faceapi.FaceMatcher(
+  //   labeledFaceDescriptors.filter(x => x != undefined),
+  //   0.6
+  // );
+  // saveToFile(labeledFaceDescriptors)
+  // console.log('saved')
+  // faceapi.tf.engine().endScope();
 })
 
 
