@@ -65,7 +65,6 @@ app.get('/test', async (req, res) => {
 app.get('/update', async (req, res) => {
   let from = req.query.from;
   console.log('RECEIVED FROM', from)
-  res.send('UPDATING!');
   res.setHeader('Content-Type', 'application/json');
   faceapi.tf.engine().startScope();
   const url = req.query.imgUrl
