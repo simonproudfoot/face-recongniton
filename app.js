@@ -56,8 +56,16 @@ app.get('/find', async (req, res) => {
 })
 
 
+app.get('/test', async (req, res) => {
+   var getFullPath = path.join("public",req.path);
+
+console.log(getFullPath)
+})
+
 // UPDATE DATABASE
 app.get('/update', async (req, res) => {
+  var origin = req.headers.origin;
+  console.log('RECEIVED FROM')
   res.setHeader('Content-Type', 'application/json');
   res.send(JSON.stringify({ result: 'done' }));
   faceapi.tf.engine().startScope();
@@ -77,8 +85,7 @@ app.get('/update', async (req, res) => {
 })
 
 
-async function loadLabeledImages() {
-
+async function loadLabeledImages(url) {
   const data = await fetch('https://lp-picture-library.greenwich-design-projects.co.uk/wp-json/acf/v3/options/face-library').then((data) => data.json());
   const images = await data.acf['face-library']
   return Promise.all(
@@ -107,6 +114,12 @@ async function saveToFile(data) {
 }
 
 
+
 app.listen(port, () => {
   console.log('app running on port: 3000');
 });
+
+
+
+
+
