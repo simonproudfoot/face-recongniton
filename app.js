@@ -8,7 +8,7 @@ const urllib = require('urllib')
 //const tf = require('@tensorflow/tfjs');
 var cors = require('cors')
 // const https = require('https');
-// const http = require('http');
+const http = require('http');
 const fs = require('fs');
 //const { cos } = require('@tensorflow/tfjs');
 //require('@tensorflow/tfjs')
@@ -20,6 +20,22 @@ faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
 const app = express()
 let port = process.env.PORT || 3000
 app.use(cors())
+
+const server = http.createServer(app);
+const { Server } = require("socket.io");
+const io = new Server(server);
+io.on('connection', (socket) => {
+  console.log('a user connected');
+  io.emit('message', 'I got ya!')
+
+});
+
+server.listen(4000, () => {
+  console.log('listening on *:4000');
+});
+
+
+
 // FIND FACES
 app.get('/find', async (req, res) => {
   faceapi.tf.engine().startScope();
@@ -56,13 +72,9 @@ app.get('/find', async (req, res) => {
 })
 
 
-app.get('/test', async (req, res) => {
-  var getFullPath = path.join("public", req.path);
-
-  console.log(getFullPath)
-})
 // UPDATE DATABASE
 app.get('/update', async (req, res) => {
+
   let from = req.query.from;
   console.log('RECEIVED FROM', from)
   res.setHeader('Content-Type', 'application/json');
@@ -78,8 +90,10 @@ app.get('/update', async (req, res) => {
     0.6
   );
   saveToFile(labeledFaceDescriptors)
-  console.log('saved')
+  
   faceapi.tf.engine().endScope();
+
+  res.send('Done!!!')
 })
 
 
