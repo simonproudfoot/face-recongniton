@@ -16,6 +16,7 @@ const savedData = require("./savedFaceSearch.json");
 
 const { Canvas, Image, ImageData } = canvas;
 faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
+
 let processing = false
 //require('@tensorflow/tfjs-node');
 const app = express()
@@ -32,7 +33,7 @@ const io = require('socket.io')(server, {
 
 
 server.listen(port, () => {
-  console.log('listening on *:' + port);
+  console.log('listening on *:'+port);
 });
 
 
@@ -55,7 +56,7 @@ io.on('connection', async (socket) => {
       faceapi.tf.engine().endScope();
       processing = false
     } else {
-      socket.emit("error", 'Process already running. Please wait');
+      socket.emit("error",'Process already running. Please wait');
     }
   })
 
@@ -106,24 +107,19 @@ async function loadLabeledImages(url, socket) {
   return Promise.all(
     images.map(async label => {
       const descriptions = []
-      // try {
-      const img = await canvas.loadImage(label.image.sizes.medium)
+      try {
+        const img = await canvas.loadImage(label.image.sizes.medium)
 
-      const detections = await faceapi.detectSingleFace(img).withFaceLandmarks(true).withFaceDescriptor()
-      if (detections != undefined && detections.descriptor != undefined && label.name != undefined) {
-        console.log('process image:', img)
-        socket.emit("countDown", total++);
-        descriptions.push(detections.descriptor)
-        return new faceapi.LabeledFaceDescriptors(label.name, descriptions);
-      } else {
-        socket.emit("countDown", total++);
-        socket.emit("error:", error);
+        const detections = await faceapi.detectSingleFace(img).withFaceLandmarks(true).withFaceDescriptor()
+        if (detections != undefined && detections.descriptor != undefined && label.name != undefined) {
+          console.log('process image:', img)
+          socket.emit("countDown", total++);
+          descriptions.push(detections.descriptor)
+          return new faceapi.LabeledFaceDescriptors(label.name, descriptions);
+        }
+      } catch (error) {
+        console.log('face error', error)
       }
-      // } catch (error) {
-      //   console.log('face error', error)
-      //   socket.emit("error:", error);
-
-      // }
     })
   )
 }
