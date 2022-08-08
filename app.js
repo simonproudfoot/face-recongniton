@@ -31,6 +31,7 @@ const io = require('socket.io')(server, {
   }
 });
 
+let hasErrors = false
 
 server.listen(port, () => {
   console.log('listening on *:' + port);
@@ -39,6 +40,7 @@ server.listen(port, () => {
 
 io.on('connection', async (socket) => {
   console.log('connected')
+
   socket.on("updateFaces", async (from) => {
     if (!processing) {
       processing = true
@@ -47,18 +49,29 @@ io.on('connection', async (socket) => {
       await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
       await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
       await faceapi.nets.faceLandmark68TinyNet.loadFromDisk(path.join(__dirname, 'models'));
-      const labeledFaceDescriptors = await loadLabeledImages(from.from, socket);
+      const labeledFaceDescriptors = await loadLabeledImages(from.from, socket)
+
+      hasErrors = labeledFaceDescriptors.find(x=>x.status == 'rejected')
+
+      console.log(labeledFaceDescriptors.filter(x => x != undefined && x.status != 'rejected').map(y => y.value))
+
+
       const faceMatcher = new faceapi.FaceMatcher(
-        labeledFaceDescriptors.filter(x => x != undefined),
+        labeledFaceDescriptors.filter(x => x != undefined && x.status != 'rejected').map(y => y.value),
         0.6
       );
+
       saveToFile(labeledFaceDescriptors)
       faceapi.tf.engine().endScope();
-      
-      socket.emit("finished", '');
+
+      if (hasErrors) {
+        socket.emit("errorMessage", 'Done, but with errors. Some images failed to load. Please check for missing images');
+      }
+
+      hasErrors = false
       processing = false
     } else {
-      socket.emit("error", 'Process already running. Please wait');
+      socket.emit("errorMessage", 'Process already running. Please wait');
     }
   })
 
@@ -102,26 +115,25 @@ app.get('/find', async (req, res) => {
 })
 
 async function loadLabeledImages(url, socket) {
+
   const data = await fetch(url + '/wp-json/acf/v3/options/face-library').then((data) => data.json());
   const images = await data.acf['face-library']
   let total = 0
   socket.emit("totalFaces", images.length - 1);
-  return Promise.all(
+  return Promise.allSettled(
     images.map(async label => {
       const descriptions = []
-      try {
-        const img = await canvas.loadImage(label.image.sizes.medium)
-        const detections = await faceapi.detectSingleFace(img).withFaceLandmarks(true).withFaceDescriptor()
-        if (img && detections != undefined && detections.descriptor != undefined && label.name != undefined) {
-          console.log('process image:', img)
-          socket.emit("countDown", total++);
-          descriptions.push(detections.descriptor)
-          return new faceapi.LabeledFaceDescriptors(label.name, descriptions);
-        }
-      } catch (error) {
-        console.log(label)
-        console.log('face error', error)
+
+      // try 
+
+      const img = await canvas.loadImage(label.image.sizes.medium)
+      const detections = await faceapi.detectSingleFace(img).withFaceLandmarks(true).withFaceDescriptor()
+      socket.emit("countDown", total++);
+      if (detections != undefined && detections.descriptor != undefined && label.name != undefined) {
+        descriptions.push(detections.descriptor)
+        return new faceapi.LabeledFaceDescriptors(label.name, descriptions);
       }
+
     })
   )
 }
