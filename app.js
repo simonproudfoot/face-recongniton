@@ -33,7 +33,7 @@ const io = require('socket.io')(server, {
 
 
 server.listen(port, () => {
-  console.log('listening on *:'+port);
+  console.log('listening on *:' + port);
 });
 
 
@@ -54,9 +54,11 @@ io.on('connection', async (socket) => {
       );
       saveToFile(labeledFaceDescriptors)
       faceapi.tf.engine().endScope();
+      
+      socket.emit("finished", '');
       processing = false
     } else {
-      socket.emit("error",'Process already running. Please wait');
+      socket.emit("error", 'Process already running. Please wait');
     }
   })
 
@@ -109,7 +111,6 @@ async function loadLabeledImages(url, socket) {
       const descriptions = []
       try {
         const img = await canvas.loadImage(label.image.sizes.medium)
-
         const detections = await faceapi.detectSingleFace(img).withFaceLandmarks(true).withFaceDescriptor()
         if (detections != undefined && detections.descriptor != undefined && label.name != undefined) {
           console.log('process image:', img)
@@ -118,6 +119,7 @@ async function loadLabeledImages(url, socket) {
           return new faceapi.LabeledFaceDescriptors(label.name, descriptions);
         }
       } catch (error) {
+        console.log(label)
         console.log('face error', error)
       }
     })
