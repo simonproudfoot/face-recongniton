@@ -15,6 +15,7 @@ const fs = require('fs');
 const base64 = require('node-base64-image')
 const savedData = require("./savedFaceSearch.json");
 const { Canvas, Image, ImageData } = canvas;
+let processing = false
 faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
 //require('@tensorflow/tfjs-node');
 const app = express()
@@ -23,10 +24,34 @@ app.use(cors())
 
 const server = http.createServer(app);
 const { Server } = require("socket.io");
-const io = new Server(server);
-io.on('connection', (socket) => {
-  console.log('a user connected');
-  io.emit('message', 'I got ya!')
+const io = require('socket.io')(server, {
+  cors: {
+    origin: '*',
+  }
+});
+
+io.on('connection', async (socket) => {
+  console.log('connected')
+  socket.on("updateFaces", async (from) => {
+    if (!processing) {
+      processing = true
+      console.log('INCOMING REQUEST FROM: ' + from.from)
+      faceapi.tf.engine().startScope();
+      await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
+      await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
+      await faceapi.nets.faceLandmark68TinyNet.loadFromDisk(path.join(__dirname, 'models'));
+      const labeledFaceDescriptors = await loadLabeledImages(from.from, socket);
+      const faceMatcher = new faceapi.FaceMatcher(
+        labeledFaceDescriptors.filter(x => x != undefined),
+        0.6
+      );
+      saveToFile(labeledFaceDescriptors)
+      faceapi.tf.engine().endScope();
+      processing = false
+    } else {
+      socket.emit("error",'Process already running. Please wait');
+    }
+  })
 
 });
 
@@ -73,41 +98,45 @@ app.get('/find', async (req, res) => {
 
 
 // UPDATE DATABASE
-app.get('/update', async (req, res) => {
+// app.get('/update', async (req, res) => {
 
-  let from = req.query.from;
-  console.log('RECEIVED FROM', from)
-  res.setHeader('Content-Type', 'application/json');
-  faceapi.tf.engine().startScope();
-  const url = req.query.imgUrl
-  await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
-  // await faceapi.nets.faceLandmark68Net.loadFromDisk(path.join(__dirname, 'models'));
-  await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
-  await faceapi.nets.faceLandmark68TinyNet.loadFromDisk(path.join(__dirname, 'models'));
-  const labeledFaceDescriptors = await loadLabeledImages(from);
-  const faceMatcher = new faceapi.FaceMatcher(
-    labeledFaceDescriptors.filter(x => x != undefined),
-    0.6
-  );
-  saveToFile(labeledFaceDescriptors)
-  
-  faceapi.tf.engine().endScope();
+//   let from = req.query.from;
+//   console.log('RECEIVED FROM', from)
+//   res.setHeader('Content-Type', 'application/json');
+//   faceapi.tf.engine().startScope();
+//   const url = req.query.imgUrl
+//   await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
+//   // await faceapi.nets.faceLandmark68Net.loadFromDisk(path.join(__dirname, 'models'));
+//   await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
+//   await faceapi.nets.faceLandmark68TinyNet.loadFromDisk(path.join(__dirname, 'models'));
+//   const labeledFaceDescriptors = await loadLabeledImages(from);
+//   const faceMatcher = new faceapi.FaceMatcher(
+//     labeledFaceDescriptors.filter(x => x != undefined),
+//     0.6
+//   );
+//   saveToFile(labeledFaceDescriptors)
 
-  res.send('Done!!!')
-})
+//   faceapi.tf.engine().endScope();
+
+//   res.send('Done!!!')
+// })
 
 
-async function loadLabeledImages(url) {
+async function loadLabeledImages(url, socket) {
   const data = await fetch(url + '/wp-json/acf/v3/options/face-library').then((data) => data.json());
   const images = await data.acf['face-library']
+  let total = 0
+  socket.emit("totalFaces", images.length - 1);
   return Promise.all(
     images.map(async label => {
       const descriptions = []
       try {
         const img = await canvas.loadImage(label.image.sizes.medium)
-        console.log('process image:', img)
+
         const detections = await faceapi.detectSingleFace(img).withFaceLandmarks(true).withFaceDescriptor()
         if (detections != undefined && detections.descriptor != undefined && label.name != undefined) {
+          console.log('process image:', img)
+          socket.emit("countDown", total++);
           descriptions.push(detections.descriptor)
           return new faceapi.LabeledFaceDescriptors(label.name, descriptions);
         }
