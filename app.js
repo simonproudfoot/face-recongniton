@@ -10,25 +10,31 @@ var cors = require('cors')
 // const https = require('https');
 const http = require('http');
 const fs = require('fs');
-//const { cos } = require('@tensorflow/tfjs');
-//require('@tensorflow/tfjs')
+
 const base64 = require('node-base64-image')
 const savedData = require("./savedFaceSearch.json");
+
 const { Canvas, Image, ImageData } = canvas;
-let processing = false
 faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
+let processing = false
 //require('@tensorflow/tfjs-node');
 const app = express()
 let port = process.env.PORT || 3000
 app.use(cors())
 
 const server = http.createServer(app);
-const { Server } = require("socket.io");
+//const { Server } = require("socket.io");
 const io = require('socket.io')(server, {
   cors: {
     origin: '*',
   }
 });
+
+
+server.listen(port, () => {
+  console.log('listening on *:'+port);
+});
+
 
 io.on('connection', async (socket) => {
   console.log('connected')
@@ -53,10 +59,6 @@ io.on('connection', async (socket) => {
     }
   })
 
-});
-
-server.listen(4000, () => {
-  console.log('listening on *:4000');
 });
 
 
@@ -96,32 +98,6 @@ app.get('/find', async (req, res) => {
   faceapi.tf.engine().endScope();
 })
 
-
-// UPDATE DATABASE
-// app.get('/update', async (req, res) => {
-
-//   let from = req.query.from;
-//   console.log('RECEIVED FROM', from)
-//   res.setHeader('Content-Type', 'application/json');
-//   faceapi.tf.engine().startScope();
-//   const url = req.query.imgUrl
-//   await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
-//   // await faceapi.nets.faceLandmark68Net.loadFromDisk(path.join(__dirname, 'models'));
-//   await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
-//   await faceapi.nets.faceLandmark68TinyNet.loadFromDisk(path.join(__dirname, 'models'));
-//   const labeledFaceDescriptors = await loadLabeledImages(from);
-//   const faceMatcher = new faceapi.FaceMatcher(
-//     labeledFaceDescriptors.filter(x => x != undefined),
-//     0.6
-//   );
-//   saveToFile(labeledFaceDescriptors)
-
-//   faceapi.tf.engine().endScope();
-
-//   res.send('Done!!!')
-// })
-
-
 async function loadLabeledImages(url, socket) {
   const data = await fetch(url + '/wp-json/acf/v3/options/face-library').then((data) => data.json());
   const images = await data.acf['face-library']
@@ -154,11 +130,6 @@ async function saveToFile(data) {
   wstream.end();
 }
 
-
-
-app.listen(port, () => {
-  console.log('app running on port: 3000');
-});
 
 
 
