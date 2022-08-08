@@ -53,7 +53,7 @@ io.on('connection', async (socket) => {
 
       hasErrors = labeledFaceDescriptors.find(x=>x.status == 'rejected')
 
-      console.log(labeledFaceDescriptors.filter(x => x != undefined && x.status != 'rejected').map(y => y.value))
+     // console.log(labeledFaceDescriptors.filter(x => x != undefined && x.status != 'rejected').map(y => y.value))
 
 
       const faceMatcher = new faceapi.FaceMatcher(
@@ -61,8 +61,6 @@ io.on('connection', async (socket) => {
         0.6
       );
 
-      saveToFile(labeledFaceDescriptors)
-      faceapi.tf.engine().endScope();
 
       if (hasErrors) {
         socket.emit("errorMessage", 'Done, but with errors. Some images failed to load. Please check for missing images');
@@ -70,6 +68,12 @@ io.on('connection', async (socket) => {
 
       hasErrors = false
       processing = false
+
+      
+      saveToFile(labeledFaceDescriptors)
+      faceapi.tf.engine().endScope();
+
+    
     } else {
       socket.emit("errorMessage", 'Process already running. Please wait');
     }
