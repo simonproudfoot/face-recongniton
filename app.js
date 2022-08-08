@@ -133,7 +133,8 @@ async function loadLabeledImages(url, socket) {
       const img = await canvas.loadImage(label.image.sizes.medium)
       const detections = await faceapi.detectSingleFace(img).withFaceLandmarks(true).withFaceDescriptor()
       socket.emit("countDown", total++);
-      if (detections != undefined && detections.descriptor != undefined && label.name != undefined) {
+      console.log(img)
+      if (img && detections != undefined && detections.descriptor != undefined && label.name != undefined) {
         descriptions.push(detections.descriptor)
         return new faceapi.LabeledFaceDescriptors(label.name, descriptions);
       }
