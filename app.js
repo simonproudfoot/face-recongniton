@@ -43,7 +43,7 @@ io.on('connection', async (socket) => {
   console.log('connected')
 
   socket.on("thanks", async (from) => {
-   // console.log('received')
+    // console.log('received')
   })
 
   socket.on("updateFaces", async (from) => {
@@ -56,20 +56,22 @@ io.on('connection', async (socket) => {
       await faceapi.nets.faceLandmark68TinyNet.loadFromDisk(path.join(__dirname, 'models'));
       const labeledFaceDescriptors = await loadLabeledImages(from.from, socket)
       // hasErrors = labeledFaceDescriptors.find(x => x._status == 'rejected')
+
+
       let filtered = []
       labeledFaceDescriptors.forEach(face => {
         if (face != undefined) {
           filtered.push(face)
         }
-        // if(face !=undefined && face.value != undefined && face.value._descriptors != undefined){
-        // }
       });
-
 
       const faceMatcher = new faceapi.FaceMatcher(
         filtered,
         0.6
       );
+
+
+
       // // if (hasErrors) {
       // //   socket.emit("errorMessage", 'Done, but with errors. Some images failed to load. Please check for missing images');
       // // }
@@ -77,7 +79,7 @@ io.on('connection', async (socket) => {
       processing = false
       console.log('all done!')
       socket.emit("complete", '');
-      saveToFile(filtered)
+      // saveToFile(filtered)
       faceapi.tf.engine().endScope();
 
     } else {
@@ -126,8 +128,8 @@ app.get('/find', async (req, res) => {
 
 async function loadLabeledImages(url, socket) {
 
-  //const data = await fetch(url + '/wp-json/acf/v3/options/face-library').then((data) => data.json());
-  const data = await fetch('https://lp-picture-library.greenwich-design-projects.co.uk//wp-json/acf/v3/options/face-library').then((data) => data.json());
+  const data = await fetch(url + '/wp-json/acf/v3/options/face-library').then((data) => data.json());
+  //const data = await fetch('https://lp-picture-library.greenwich-design-projects.co.uk//wp-json/acf/v3/options/face-library').then((data) => data.json());
 
   const images = await data.acf['face-library']
   let total = 0
@@ -135,24 +137,30 @@ async function loadLabeledImages(url, socket) {
   return Promise.all(
     images.map(async label => {
       const descriptions = []
-      const img = await canvas.loadImage(label.image.sizes.medium)
-      //    socket.emit("countDown", total++);
-      const detections = await faceapi.detectSingleFace(img).withFaceLandmarks(true).withFaceDescriptor()
-      if (img && detections != undefined && detections.descriptor != undefined && label.name != undefined) {
-        console.log(img)
-        total++
-        if (total % 10 === 0 || total == 0) {
-          console.log(total)
-          socket.emit("countDown", total);
+      if (label.image.filesize > 0 && label.image.mime_type == 'image/jpeg') {
+        const img = await canvas.loadImage(label.image.sizes.medium)
+
+        //    socket.emit("countDown", total++);
+        const detections = await faceapi.detectSingleFace(img).withFaceLandmarks(true).withFaceDescriptor()
+        if (img && detections != undefined && detections.descriptor != undefined && label.name != undefined) {
+
+          total++
+          if (total % 10 === 0 || total == 0) {
+            console.log(total)
+            socket.emit("countDown", total);
+          }
+          descriptions.push(detections.descriptor)
+          return new faceapi.LabeledFaceDescriptors(label.name, descriptions);
         }
-        descriptions.push(detections.descriptor)
-        return new faceapi.LabeledFaceDescriptors(label.name, descriptions);
+      }
+      else {
+        console.log('ERROR!!!!')
+        socket.emit("errorMessage", 'cant load image: ' + label.image.filename);
+
       }
     })
   )
 }
-
-
 async function saveToFile(data) {
   var wstream = fs.createWriteStream('savedFaceSearch.json');
   wstream.write(JSON.stringify(data));
