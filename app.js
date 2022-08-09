@@ -41,11 +41,6 @@ server.listen(port, () => {
 io.on('connection', async (socket) => {
   console.log('connected')
 
-  socket.on("connect_error", (err) => {
-    console.log(`connect_error due to ${err.message}`);
-  });
-
-
   socket.on("updateFaces", async (from) => {
     if (!processing) {
       processing = true
@@ -60,7 +55,6 @@ io.on('connection', async (socket) => {
 
       // console.log(labeledFaceDescriptors.filter(x => x != undefined && x.status != 'rejected').map(y => y.value))
 
-
       const faceMatcher = new faceapi.FaceMatcher(
         labeledFaceDescriptors.filter(x => x != undefined && x.status != 'rejected').map(y => y.value),
         0.6
@@ -68,8 +62,9 @@ io.on('connection', async (socket) => {
 
 
       if (hasErrors) {
-        //  socket.emit("errorMessage", 'Done, but with errors. Some images failed to load. Please check for missing images');
+        socket.emit("errorMessage", 'Done, but with errors. Some images failed to load. Please check for missing images');
       }
+      socket.emit("countDown", 100);
 
       hasErrors = false
       processing = false
@@ -133,24 +128,11 @@ async function loadLabeledImages(url, socket) {
     images.map(async label => {
       const descriptions = []
 
-      if (!socket) {
-        reject('No socket connection.');
-      } else {
-        socket.emit('countDown', total++, (response) => {
-          if (response.error) {
-            console.error(response.error);
-            reject(response.error);
-          } else {
-         
-            resolve();
-          }
-        });
-      }
-
+      // try 
       const img = await canvas.loadImage(label.image.sizes.medium)
       const detections = await faceapi.detectSingleFace(img).withFaceLandmarks(true).withFaceDescriptor()
+
       if (img && detections != undefined && detections.descriptor != undefined && label.name != undefined) {
-        console.log(img)
         descriptions.push(detections.descriptor)
         return new faceapi.LabeledFaceDescriptors(label.name, descriptions);
       }
