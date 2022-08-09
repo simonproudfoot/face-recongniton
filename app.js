@@ -132,18 +132,25 @@ async function loadLabeledImages(url, socket) {
   return Promise.allSettled(
     images.map(async label => {
       const descriptions = []
-      total++
-      // try 
+
+      if (!socket) {
+        reject('No socket connection.');
+      } else {
+        socket.emit('countDown', total++, (response) => {
+          if (response.error) {
+            console.error(response.error);
+            reject(response.error);
+          } else {
+         
+            resolve();
+          }
+        });
+      }
 
       const img = await canvas.loadImage(label.image.sizes.medium)
       const detections = await faceapi.detectSingleFace(img).withFaceLandmarks(true).withFaceDescriptor()
-      if (total % 4 == 0) {
-        console.log(total)
-        
-        socket.emit("countDown", total);
-      }
-      console.log(img)
       if (img && detections != undefined && detections.descriptor != undefined && label.name != undefined) {
+        console.log(img)
         descriptions.push(detections.descriptor)
         return new faceapi.LabeledFaceDescriptors(label.name, descriptions);
       }
