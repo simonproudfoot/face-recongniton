@@ -43,7 +43,7 @@ io.on('connection', async (socket) => {
   console.log('connected')
 
   socket.on("thanks", async (from) => {
-    console.log('received')
+   // console.log('received')
   })
 
   socket.on("updateFaces", async (from) => {
@@ -127,7 +127,7 @@ app.get('/find', async (req, res) => {
 async function loadLabeledImages(url, socket) {
 
   //const data = await fetch(url + '/wp-json/acf/v3/options/face-library').then((data) => data.json());
-  const data = await fetch(' https://lp-picture-library.greenwich-design-projects.co.uk//wp-json/acf/v3/options/face-library').then((data) => data.json());
+  const data = await fetch('https://lp-picture-library.greenwich-design-projects.co.uk//wp-json/acf/v3/options/face-library').then((data) => data.json());
 
   const images = await data.acf['face-library']
   let total = 0
@@ -140,6 +140,11 @@ async function loadLabeledImages(url, socket) {
       const detections = await faceapi.detectSingleFace(img).withFaceLandmarks(true).withFaceDescriptor()
       if (img && detections != undefined && detections.descriptor != undefined && label.name != undefined) {
         console.log(img)
+        total++
+        if (total % 3 === 0 || total == 0) {
+          console.log(total)
+          socket.emit("countDown", total);
+        }
         descriptions.push(detections.descriptor)
         return new faceapi.LabeledFaceDescriptors(label.name, descriptions);
       }
