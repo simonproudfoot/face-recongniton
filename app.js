@@ -55,19 +55,13 @@ io.on('connection', async (socket) => {
       await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
       await faceapi.nets.faceLandmark68TinyNet.loadFromDisk(path.join(__dirname, 'models'));
       const labeledFaceDescriptors = await loadLabeledImages(from.from, socket)
-
       // hasErrors = labeledFaceDescriptors.find(x => x._status == 'rejected')
-
       let filtered = []
-
       labeledFaceDescriptors.forEach(face => {
         if (face != undefined) {
-
           filtered.push(face)
         }
-
         // if(face !=undefined && face.value != undefined && face.value._descriptors != undefined){
-
         // }
       });
 
@@ -81,6 +75,7 @@ io.on('connection', async (socket) => {
       // // }
       hasErrors = false
       processing = false
+      console.log('all done!')
       socket.emit("complete", '');
       saveToFile(filtered)
       faceapi.tf.engine().endScope();
@@ -141,10 +136,10 @@ async function loadLabeledImages(url, socket) {
     images.map(async label => {
       const descriptions = []
       const img = await canvas.loadImage(label.image.sizes.medium)
-  //    socket.emit("countDown", total++);
-
+      //    socket.emit("countDown", total++);
       const detections = await faceapi.detectSingleFace(img).withFaceLandmarks(true).withFaceDescriptor()
       if (img && detections != undefined && detections.descriptor != undefined && label.name != undefined) {
+        console.log(img)
         descriptions.push(detections.descriptor)
         return new faceapi.LabeledFaceDescriptors(label.name, descriptions);
       }
