@@ -13,6 +13,7 @@ const fs = require('fs');
 
 const base64 = require('node-base64-image')
 const savedData = require("./savedFaceSearch.json");
+const { cos } = require('@tensorflow/tfjs');
 
 const { Canvas, Image, ImageData } = canvas;
 faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
@@ -53,18 +54,17 @@ io.on('connection', async (socket) => {
 
       hasErrors = labeledFaceDescriptors.find(x => x.status == 'rejected')
 
-      // console.log(labeledFaceDescriptors.filter(x => x != undefined && x.status != 'rejected').map(y => y.value))
-
+      let filtered = labeledFaceDescriptors.filter(x => x.value?._descriptors).map(y => y.value)
       const faceMatcher = new faceapi.FaceMatcher(
-        labeledFaceDescriptors.filter(x => x != undefined && x.status != 'rejected').map(y => y.value),
+        filtered,
         0.6
       );
 
 
-      if (hasErrors) {
-        socket.emit("errorMessage", 'Done, but with errors. Some images failed to load. Please check for missing images');
-      }
-      socket.emit("countDown", 100);
+      // if (hasErrors) {
+      //   socket.emit("errorMessage", 'Done, but with errors. Some images failed to load. Please check for missing images');
+      // }
+
 
       hasErrors = false
       processing = false
@@ -120,23 +120,23 @@ app.get('/find', async (req, res) => {
 
 async function loadLabeledImages(url, socket) {
 
-  const data = await fetch(url + '/wp-json/acf/v3/options/face-library').then((data) => data.json());
+  //const data = await fetch(url + '/wp-json/acf/v3/options/face-library').then((data) => data.json());
+  const data = await fetch(' https://lp-picture-library.greenwich-design-projects.co.uk//wp-json/acf/v3/options/face-library').then((data) => data.json());
+
   const images = await data.acf['face-library']
   let total = 0
   socket.emit("totalFaces", images.length - 1);
   return Promise.allSettled(
     images.map(async label => {
       const descriptions = []
-
-      // try 
       const img = await canvas.loadImage(label.image.sizes.medium)
-      const detections = await faceapi.detectSingleFace(img).withFaceLandmarks(true).withFaceDescriptor()
+      socket.emit("countDown", total++);
 
+      const detections = await faceapi.detectSingleFace(img).withFaceLandmarks(true).withFaceDescriptor()
       if (img && detections != undefined && detections.descriptor != undefined && label.name != undefined) {
         descriptions.push(detections.descriptor)
         return new faceapi.LabeledFaceDescriptors(label.name, descriptions);
       }
-
     })
   )
 }
