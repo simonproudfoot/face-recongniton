@@ -42,6 +42,10 @@ server.listen(port, () => {
 io.on('connection', async (socket) => {
   console.log('connected')
 
+  socket.on("thanks", async (from) => {
+    console.log('received')
+  })
+
   socket.on("updateFaces", async (from) => {
     if (!processing) {
       processing = true
@@ -58,7 +62,7 @@ io.on('connection', async (socket) => {
 
       labeledFaceDescriptors.forEach(face => {
         if (face != undefined) {
-          console.log(face)
+
           filtered.push(face)
         }
 
@@ -76,7 +80,7 @@ io.on('connection', async (socket) => {
       // //   socket.emit("errorMessage", 'Done, but with errors. Some images failed to load. Please check for missing images');
       // // }
       hasErrors = false
-       processing = false
+      processing = false
       socket.emit("complete", '');
       saveToFile(filtered)
       faceapi.tf.engine().endScope();
