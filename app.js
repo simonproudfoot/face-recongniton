@@ -132,14 +132,15 @@ async function loadLabeledImages(url, socket) {
   return Promise.allSettled(
     images.map(async label => {
       const descriptions = []
-
+      total++
       // try 
 
       const img = await canvas.loadImage(label.image.sizes.medium)
       const detections = await faceapi.detectSingleFace(img).withFaceLandmarks(true).withFaceDescriptor()
-      if (total % 5 === 0) {
-
-        socket.emit("countDown", total++);
+      if (total % 4 == 0) {
+        console.log(total)
+        
+        socket.emit("countDown", total);
       }
       console.log(img)
       if (img && detections != undefined && detections.descriptor != undefined && label.name != undefined) {
