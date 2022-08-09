@@ -40,7 +40,7 @@ server.listen(port, () => {
 
 io.on('connection', async (socket) => {
   console.log('connected')
-  
+
   socket.on("connect_error", (err) => {
     console.log(`connect_error due to ${err.message}`);
   });
@@ -56,9 +56,9 @@ io.on('connection', async (socket) => {
       await faceapi.nets.faceLandmark68TinyNet.loadFromDisk(path.join(__dirname, 'models'));
       const labeledFaceDescriptors = await loadLabeledImages(from.from, socket)
 
-      hasErrors = labeledFaceDescriptors.find(x=>x.status == 'rejected')
+      hasErrors = labeledFaceDescriptors.find(x => x.status == 'rejected')
 
-     // console.log(labeledFaceDescriptors.filter(x => x != undefined && x.status != 'rejected').map(y => y.value))
+      // console.log(labeledFaceDescriptors.filter(x => x != undefined && x.status != 'rejected').map(y => y.value))
 
 
       const faceMatcher = new faceapi.FaceMatcher(
@@ -68,17 +68,17 @@ io.on('connection', async (socket) => {
 
 
       if (hasErrors) {
-        socket.emit("errorMessage", 'Done, but with errors. Some images failed to load. Please check for missing images');
+        //  socket.emit("errorMessage", 'Done, but with errors. Some images failed to load. Please check for missing images');
       }
 
       hasErrors = false
       processing = false
 
-      
+
       saveToFile(labeledFaceDescriptors)
       faceapi.tf.engine().endScope();
 
-    
+
     } else {
       socket.emit("errorMessage", 'Process already running. Please wait');
     }
@@ -137,7 +137,10 @@ async function loadLabeledImages(url, socket) {
 
       const img = await canvas.loadImage(label.image.sizes.medium)
       const detections = await faceapi.detectSingleFace(img).withFaceLandmarks(true).withFaceDescriptor()
-      socket.emit("countDown", total++);
+      if (total % 3 === 0) {
+
+        socket.emit("countDown", total++);
+      }
       console.log(img)
       if (img && detections != undefined && detections.descriptor != undefined && label.name != undefined) {
         descriptions.push(detections.descriptor)
