@@ -52,27 +52,34 @@ io.on('connection', async (socket) => {
       await faceapi.nets.faceLandmark68TinyNet.loadFromDisk(path.join(__dirname, 'models'));
       const labeledFaceDescriptors = await loadLabeledImages(from.from, socket)
 
-      hasErrors = labeledFaceDescriptors.find(x => x.status == 'rejected')
+      // hasErrors = labeledFaceDescriptors.find(x => x._status == 'rejected')
 
-      let filtered = labeledFaceDescriptors.filter(x => x.value?._descriptors).map(y => y.value)
+      let filtered = []
+
+      labeledFaceDescriptors.forEach(face => {
+        if (face != undefined) {
+          console.log(face)
+          filtered.push(face)
+        }
+
+        // if(face !=undefined && face.value != undefined && face.value._descriptors != undefined){
+
+        // }
+      });
+
+
       const faceMatcher = new faceapi.FaceMatcher(
         filtered,
         0.6
       );
-
-
-      // if (hasErrors) {
-      //   socket.emit("errorMessage", 'Done, but with errors. Some images failed to load. Please check for missing images');
-      // }
-
-
+      // // if (hasErrors) {
+      // //   socket.emit("errorMessage", 'Done, but with errors. Some images failed to load. Please check for missing images');
+      // // }
       hasErrors = false
-      processing = false
-
-
-      saveToFile(labeledFaceDescriptors)
+       processing = false
+      socket.emit("complete", '');
+      saveToFile(filtered)
       faceapi.tf.engine().endScope();
-
 
     } else {
       socket.emit("errorMessage", 'Process already running. Please wait');
@@ -126,7 +133,7 @@ async function loadLabeledImages(url, socket) {
   const images = await data.acf['face-library']
   let total = 0
   socket.emit("totalFaces", images.length - 1);
-  return Promise.allSettled(
+  return Promise.all(
     images.map(async label => {
       const descriptions = []
       const img = await canvas.loadImage(label.image.sizes.medium)
