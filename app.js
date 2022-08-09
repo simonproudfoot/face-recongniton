@@ -141,7 +141,7 @@ async function loadLabeledImages(url, socket) {
       if (img && detections != undefined && detections.descriptor != undefined && label.name != undefined) {
         console.log(img)
         total++
-        if (total % 3 === 0 || total == 0) {
+        if (total % 10 === 0 || total == 0) {
           console.log(total)
           socket.emit("countDown", total);
         }
