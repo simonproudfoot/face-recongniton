@@ -40,6 +40,11 @@ server.listen(port, () => {
 
 io.on('connection', async (socket) => {
   console.log('connected')
+  
+  socket.on("connect_error", (err) => {
+    console.log(`connect_error due to ${err.message}`);
+  });
+
 
   socket.on("updateFaces", async (from) => {
     if (!processing) {
