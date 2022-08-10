@@ -71,7 +71,7 @@ io.on('connection', async (socket) => {
       hasErrors = false
       processing = false
       console.log('all done!')
-      socket.emit("complete", '');
+      socket.timeout(5000).emit("complete", '');
       socket.disconnect();
       faceapi.tf.engine().endScope();
       setTimeout(() => {
@@ -80,7 +80,7 @@ io.on('connection', async (socket) => {
    
 
     } else {
-      socket.emit("errorMessage", 'Process already running. Please wait');
+      socket.timeout(5000).emit("errorMessage", 'Process already running. Please wait');
     }
   })
 
@@ -142,7 +142,7 @@ async function loadLabeledImages(url, socket) {
           total++
           if (total % 10 === 0 || total == 0) {
             console.log(total)
-            socket.emit("countDown", total);
+            socket.timeout(5000).emit("countDown", total)
           }
           descriptions.push(detections.descriptor)
           return new faceapi.LabeledFaceDescriptors(label.name, descriptions);
@@ -150,7 +150,7 @@ async function loadLabeledImages(url, socket) {
       }
       else {
         console.log('ERROR!!!!')
-        socket.emit("errorMessage", 'cant load image: ' + label.image.filename);
+        socket.timeout(5000).emit("errorMessage", 'cant load image: ' + label.image.filename);
 
       }
     })
