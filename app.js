@@ -96,18 +96,39 @@ async function ProcessFaceData(labeledFaceDescriptors, socket) {
     }
   });
 
- // faceapi.tf.engine().endScope();
+  // faceapi.tf.engine().endScope();
   hasErrors = false
   console.log('all done!')
-   socket.emit("complete", true);
+  socket.emit("complete", true);
   setTimeout(() => {
     saveToFile(filtered)
   }, 1000);
 }
 app.get('/seedata', async (req, res) => {
+  let date;
   let data = await savedData
-  res.setHeader('Content-Type', 'application/json');
-  res.send(JSON.stringify(data));
+  // fetch file details
+  fs.stat("./savedFaceSearch.json", (err, stats) => {
+    if (err) {
+      console.log(err)
+      throw err;
+    }
+  //  console.log(stats)
+
+
+    var event = new Date(stats.mtime);
+    console.log(event.toLocaleString('en-GB', { timeZone: 'Europe/London' }));
+
+    data.unshift({lastModified: event.toLocaleString('en-GB', { timeZone: 'Europe/London' })})
+    res.setHeader('Content-Type', 'application/json');
+    res.send(JSON.stringify(data));
+    // print file last modified date
+    // console.log(`File Data Last Modified: ${stats.mtime}`);
+    // console.log(`File Status Last Modified: ${stats.ctime}`);
+  });
+
+
+
 })
 // FIND FACES
 app.get('/find', async (req, res) => {
