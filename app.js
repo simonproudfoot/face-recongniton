@@ -106,8 +106,10 @@ async function ProcessFaceData(labeledFaceDescriptors, socket) {
     saveToFile(filtered)
   }, 1000);
 }
-app.get('/test', async (req, res) => {
-  res.send(`I'm here!!!`)
+app.get('/seedata', async (req, res) => {
+  let data = await savedData
+  res.setHeader('Content-Type', 'application/json');
+  res.send(JSON.stringify(data));
 })
 // FIND FACES
 app.get('/find', async (req, res) => {
