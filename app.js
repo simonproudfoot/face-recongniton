@@ -41,7 +41,7 @@ io.on('connection', async (socket) => {
   console.log('connected')
 
   socket.on("thanks", async (from) => {
-    // console.log('received')
+    console.log('received')
   })
 
   socket.on("updateFaces", async (from) => {
@@ -71,13 +71,12 @@ io.on('connection', async (socket) => {
       hasErrors = false
       processing = false
       console.log('all done!')
-      socket.timeout(5000).emit("complete", '');
+      socket.emit("complete", true);
       socket.disconnect();
       faceapi.tf.engine().endScope();
       setTimeout(() => {
         saveToFile(filtered)
       }, 8000);
-   
 
     } else {
       socket.timeout(5000).emit("errorMessage", 'Process already running. Please wait');
@@ -140,9 +139,9 @@ async function loadLabeledImages(url, socket) {
         if (img && detections != undefined && detections.descriptor != undefined && label.name != undefined) {
 
           total++
-          if (total % 10 === 0 || total == 0) {
+          if (total % 5 === 0 || total == 0) {
             console.log(total)
-            socket.timeout(5000).emit("countDown", total)
+            socket.emit("countDown", total)
           }
           descriptions.push(detections.descriptor)
           return new faceapi.LabeledFaceDescriptors(label.name, descriptions);
@@ -150,7 +149,7 @@ async function loadLabeledImages(url, socket) {
       }
       else {
         console.log('ERROR!!!!')
-        socket.timeout(5000).emit("errorMessage", 'cant load image: ' + label.image.filename);
+        socket.emit("errorMessage", 'cant load image: ' + label.image.filename);
 
       }
     })
