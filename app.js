@@ -14,7 +14,6 @@ const fs = require('fs');
 const base64 = require('node-base64-image')
 const savedData = require("./savedFaceSearch.json");
 const { cos, image } = require('@tensorflow/tfjs');
-const { disconnect } = require('node:process');
 
 const { Canvas, Image, ImageData } = canvas;
 faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
@@ -23,9 +22,6 @@ let processing = false
 const app = express()
 let port = process.env.PORT || 3000
 app.use(cors())
-
-let allFaceData = []
-let countdown = 0
 
 const server = http.createServer(app);
 const io = require('socket.io')(server, {
@@ -43,16 +39,15 @@ server.listen(port, () => {
 
 
 io.on('connection', async (socket) => {
-  console.log('connected')
-
+  console.log('connected... Hello!')
 
   socket.on('disconnect', function (event) {
-    console.log('disconnected')
+    console.log('disconnected... Bye!')
 
-      let data = [{error: 'disconnected'}]
-      var wstream = fs.createWriteStream('errorLog.json');
-      wstream.write(JSON.stringify(data));
-      wstream.end();
+    let data = [{ error: 'disconnected' }]
+    var wstream = fs.createWriteStream('errorLog.json');
+    wstream.write(JSON.stringify(data));
+    wstream.end();
 
 
   })
@@ -95,6 +90,7 @@ async function ProcessFaceData(labeledFaceDescriptors, socket) {
     saveToFile(filtered)
   }, 8000);
 
+
 }
 
 app.get('/test', async (req, res) => {
@@ -110,6 +106,7 @@ app.get('/find', async (req, res) => {
   let faceRecognitionNet = await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
   let ssdMobilenetv1 = await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
   let faceLandmark68TinyNet = await faceapi.nets.faceLandmark68TinyNet.loadFromDisk(path.join(__dirname, 'models'));
+
   let data = await savedData
   const image = await canvas.loadImage(url);
   let content = data
@@ -138,12 +135,12 @@ app.get('/find', async (req, res) => {
 })
 
 async function loadLabeledImages(url, socket) {
-
+  let allFaceData = []
   const data = await fetch(url + '/wp-json/acf/v3/options/face-library').then((data) => data.json());
   const images = await data.acf['face-library']
   let total = 0
   socket.emit("totalFaces", images.length - 1);
-  countdown = images.length
+  let countdown = images.length
   socket.on("received", async (i) => {
 
     if (countdown > 0) {
@@ -187,9 +184,6 @@ async function saveToFile(data) {
   wstream.write(JSON.stringify(data));
   wstream.end();
 }
-
-
-
 
 
 
