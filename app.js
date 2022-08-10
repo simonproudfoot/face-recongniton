@@ -13,7 +13,8 @@ const fs = require('fs');
 
 const base64 = require('node-base64-image')
 const savedData = require("./savedFaceSearch.json");
-const { cos } = require('@tensorflow/tfjs');
+const { cos, image } = require('@tensorflow/tfjs');
+const { disconnect } = require('node:process');
 
 const { Canvas, Image, ImageData } = canvas;
 faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
@@ -22,6 +23,9 @@ let processing = false
 const app = express()
 let port = process.env.PORT || 3000
 app.use(cors())
+
+let allFaceData = []
+let countdown = 0
 
 const server = http.createServer(app);
 const io = require('socket.io')(server, {
@@ -44,7 +48,17 @@ io.on('connection', async (socket) => {
   socket.on("thanks", (from) => {
     console.log('received')
   })
-  
+
+  socket.on('disconnect', function (event) {
+    console.log('disconnected')
+
+      let data = [{error: 'disconnected'}]
+      var wstream = fs.createWriteStream('errorLog.json');
+      wstream.write(JSON.stringify(data));
+      wstream.end();
+
+
+  })
 
   socket.on("updateFaces", async (from) => {
     if (!processing) {
@@ -54,38 +68,37 @@ io.on('connection', async (socket) => {
       await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
       await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
       await faceapi.nets.faceLandmark68TinyNet.loadFromDisk(path.join(__dirname, 'models'));
-      const labeledFaceDescriptors = await loadLabeledImages(from.from, socket)
-      // hasErrors = labeledFaceDescriptors.find(x => x._status == 'rejected')
-
-      
-      let filtered = []
-      labeledFaceDescriptors.forEach(face => {
-        if (face != undefined) {
-          filtered.push(face)
-        }
-      });
-
-      const faceMatcher = new faceapi.FaceMatcher(
-        filtered,
-        0.6
-      );
-
-      hasErrors = false
-      processing = false
-      console.log('all done!')
-      socket.emit("complete", true);
-      socket.disconnect();
-      faceapi.tf.engine().endScope();
-      setTimeout(() => {
-        saveToFile(filtered)
-      }, 8000);
-
-    } else {
-      socket.timeout(5000).emit("errorMessage", 'Process already running. Please wait');
+      loadLabeledImages(from.from, socket)
     }
   })
 
 });
+
+
+async function ProcessFaceData(labeledFaceDescriptors, socket) {
+  let filtered = []
+  labeledFaceDescriptors.forEach(face => {
+    if (face != undefined) {
+      filtered.push(face)
+    }
+  });
+
+  const faceMatcher = new faceapi.FaceMatcher(
+    filtered,
+    0.6
+  );
+
+  hasErrors = false
+  processing = false
+  console.log('all done!')
+  socket.emit("complete", true);
+  socket.disconnect();
+  faceapi.tf.engine().endScope();
+  setTimeout(() => {
+    saveToFile(filtered)
+  }, 8000);
+
+}
 
 app.get('/test', async (req, res) => {
   res.send(`I'm here!!!`)
@@ -128,40 +141,58 @@ app.get('/find', async (req, res) => {
 })
 
 async function loadLabeledImages(url, socket) {
+
   const data = await fetch(url + '/wp-json/acf/v3/options/face-library').then((data) => data.json());
   const images = await data.acf['face-library']
   let total = 0
   socket.emit("totalFaces", images.length - 1);
-  return Promise.all(
-    images.map(async label => {
-      const descriptions = []
+  countdown = images.length
+  socket.on("received", async (i) => {
+
+    if (countdown > 0) {
+      countdown--
+
+      let label = images[countdown]
       if (label.image.filesize > 0 && label.image.mime_type == 'image/jpeg') {
-        const img = await canvas.loadImage(label.image.sizes.medium)
-        const detections = await faceapi.detectSingleFace(img).withFaceLandmarks(true).withFaceDescriptor()
-        if (img && detections != undefined && detections.descriptor != undefined && label.name != undefined) {
+        canvas.loadImage(label.image.url).then(async (img) => {
 
-          total++
-          if (total % 5 === 0 || total == 0) {
-            console.log(total)
-            socket.emit("countDown", total)
+
+          const detections = await faceapi.detectSingleFace(img).withFaceLandmarks(true).withFaceDescriptor()
+          if (detections != undefined && detections.descriptor != undefined && label.name != undefined) {
+            let descriptions = []
+            console.log(img)
+            descriptions.push(detections.descriptor)
+            allFaceData.push(new faceapi.LabeledFaceDescriptors(label.name, descriptions));
+          } else {
+            socket.emit('warningMessage', `Can't process ` + label.image.filename)
+
           }
-          descriptions.push(detections.descriptor)
-          return new faceapi.LabeledFaceDescriptors(label.name, descriptions);
-        }
+        }).catch((er) => {
+          socket.emit('errorMessage', `Can't load ` + label.image.filename)
+          console.log(er)
+        }).then(() => {
+          socket.emit('countDown', countdown)
+        }).catch((er) => {
+          //socket('errorMessage', `Can't load ` + label.filename)
+          console.log(er)
+        })
       }
-      else {
-        console.log('ERROR!!!!')
-        socket.emit("errorMessage", 'cant load image: ' + label.image.filename);
+    } else {
 
-      }
-    })
-  )
+      ProcessFaceData(allFaceData, socket)
+    }
+  })
+
+
 }
 async function saveToFile(data) {
   var wstream = fs.createWriteStream('savedFaceSearch.json');
   wstream.write(JSON.stringify(data));
   wstream.end();
 }
+
+
+
 
 
 
