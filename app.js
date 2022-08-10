@@ -45,9 +45,6 @@ server.listen(port, () => {
 io.on('connection', async (socket) => {
   console.log('connected')
 
-  socket.on("thanks", (from) => {
-    console.log('received')
-  })
 
   socket.on('disconnect', function (event) {
     console.log('disconnected')
