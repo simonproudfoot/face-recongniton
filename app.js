@@ -37,12 +37,14 @@ server.listen(port, () => {
 });
 
 
+
 io.on('connection', async (socket) => {
   console.log('connected')
 
-  socket.on("thanks", async (from) => {
+  socket.on("thanks", (from) => {
     console.log('received')
   })
+  
 
   socket.on("updateFaces", async (from) => {
     if (!processing) {
@@ -55,7 +57,7 @@ io.on('connection', async (socket) => {
       const labeledFaceDescriptors = await loadLabeledImages(from.from, socket)
       // hasErrors = labeledFaceDescriptors.find(x => x._status == 'rejected')
 
-
+      
       let filtered = []
       labeledFaceDescriptors.forEach(face => {
         if (face != undefined) {
