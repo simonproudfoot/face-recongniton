@@ -54,7 +54,7 @@ io.on('connection', async (socket) => {
     let countdown = images.length
     socket.on("received", async (i) => {
       if (countdown > 0) {
-        console.log('go!' + countdown)
+        console.log('processing!' + countdown)
         countdown--
         let label = images[countdown]
         if (label.image.filesize > 0 && label.image.mime_type == 'image/jpeg') {
@@ -63,7 +63,7 @@ io.on('connection', async (socket) => {
             const detections = await faceapi.detectSingleFace(img).withFaceLandmarks(true).withFaceDescriptor()
             if (detections != undefined && detections.descriptor != undefined && label.name != undefined) {
               let descriptions = []
-              console.log(img)
+
               descriptions.push(detections.descriptor)
               allFaceData.push(new faceapi.LabeledFaceDescriptors(label.name, descriptions));
             } else {
@@ -71,7 +71,7 @@ io.on('connection', async (socket) => {
             }
           }).catch((er) => {
             socket.emit('errorMessage', `Can't load ` + label.image.filename)
-            console.log(er)
+
           }).then(() => {
             socket.emit('countDown', countdown)
           }).catch((er) => {
@@ -91,17 +91,15 @@ async function ProcessFaceData(labeledFaceDescriptors, socket) {
   let filtered = []
   labeledFaceDescriptors.forEach(face => {
     if (face != undefined) {
+      console.log(face._label)
       filtered.push(face)
     }
   });
-  const faceMatcher = new faceapi.FaceMatcher(
-    filtered,
-    0.6
-  );
-  faceapi.tf.engine().endScope();
+
+ // faceapi.tf.engine().endScope();
   hasErrors = false
   console.log('all done!')
-  socket.emit("complete", true);
+   socket.emit("complete", true);
   setTimeout(() => {
     saveToFile(filtered)
   }, 1000);
@@ -117,7 +115,7 @@ app.get('/find', async (req, res) => {
   const url = req.query.imgUrl
   const format = url.split('.').pop()
 
-  console.log('finding:' + format)
+
   if (format == 'jpg' || format == 'jpeg') {
     // if memory leak continiues. try moving these models out of function
     let faceRecognitionNet = await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
