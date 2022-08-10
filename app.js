@@ -72,7 +72,7 @@ io.on('connection', async (socket) => {
       processing = false
       console.log('all done!')
       socket.emit("complete", '');
-
+      socket.disconnect();
       faceapi.tf.engine().endScope();
       setTimeout(() => {
         saveToFile(filtered)
