@@ -80,11 +80,11 @@ io.on('connection', async (socket) => {
           })
         }
       }
-        else {
-          
-          ProcessFaceData(allFaceData, socket)
-        }
-      })
+      else {
+
+        ProcessFaceData(allFaceData, socket)
+      }
+    })
   })
 });
 async function ProcessFaceData(labeledFaceDescriptors, socket) {
@@ -113,36 +113,43 @@ app.get('/test', async (req, res) => {
 app.get('/find', async (req, res) => {
   faceapi.tf.engine().startScope();
   const url = req.query.imgUrl
-  console.log('finding:' + url)
-  // if memory leak continiues. try moving these models out of function
-  let faceRecognitionNet = await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
-  let ssdMobilenetv1 = await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
-  let faceLandmark68TinyNet = await faceapi.nets.faceLandmark68TinyNet.loadFromDisk(path.join(__dirname, 'models'));
-  let data = await savedData
-  const image = await canvas.loadImage(url);
-  let content = data
-  const labeledFaceDescriptors = await Promise.all(content.map(className => {
-    if (className) {
-      const descriptors = [];
-      for (var i = 0; i < className.descriptors.length; i++) {
-        descriptors.push(new Float32Array(className.descriptors[i]));
+  const format = url.split('.').pop()
+
+  console.log('finding:' + format)
+  if (format == 'jpg' || format == 'jpeg') {
+    // if memory leak continiues. try moving these models out of function
+    let faceRecognitionNet = await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
+    let ssdMobilenetv1 = await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
+    let faceLandmark68TinyNet = await faceapi.nets.faceLandmark68TinyNet.loadFromDisk(path.join(__dirname, 'models'));
+    let data = await savedData
+    const image = await canvas.loadImage(url);
+    let content = data
+    const labeledFaceDescriptors = await Promise.all(content.map(className => {
+      if (className) {
+        const descriptors = [];
+        for (var i = 0; i < className.descriptors.length; i++) {
+          descriptors.push(new Float32Array(className.descriptors[i]));
+        }
+        return new faceapi.LabeledFaceDescriptors(className.label, descriptors);
       }
-      return new faceapi.LabeledFaceDescriptors(className.label, descriptors);
-    }
-  }))
-  const faceMatcher = new faceapi.FaceMatcher(
-    labeledFaceDescriptors.filter(x => x != undefined)
-  );
-  const displaySize = { width: image.width, height: image.height }
-  let faceDetectorOptions = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 });
-  faceapi.matchDimensions(canvas, displaySize)
-  const detections = await faceapi.detectAllFaces(image, faceDetectorOptions).withFaceLandmarks(true).withFaceDescriptors()
-  const resizedDetections = await faceapi.resizeResults(detections, displaySize)
-  const results = await resizedDetections.map((d) => faceMatcher.findBestMatch(d.descriptor))
-  console.log('found:' + results)
-  res.setHeader('Content-Type', 'application/json');
-  res.send(JSON.stringify(results));
-  faceapi.tf.engine().endScope();
+    }))
+    const faceMatcher = new faceapi.FaceMatcher(
+      labeledFaceDescriptors.filter(x => x != undefined)
+    );
+    const displaySize = { width: image.width, height: image.height }
+    let faceDetectorOptions = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 });
+    faceapi.matchDimensions(canvas, displaySize)
+    const detections = await faceapi.detectAllFaces(image, faceDetectorOptions).withFaceLandmarks(true).withFaceDescriptors()
+    const resizedDetections = await faceapi.resizeResults(detections, displaySize)
+    const results = await resizedDetections.map((d) => faceMatcher.findBestMatch(d.descriptor))
+    console.log('found:' + results)
+    res.setHeader('Content-Type', 'application/json');
+    res.send(JSON.stringify(results));
+    faceapi.tf.engine().endScope();
+  } else {
+    res.send(false);
+    res.end();
+  }
 })
 
 async function saveToFile(data) {
