@@ -72,8 +72,12 @@ io.on('connection', async (socket) => {
       processing = false
       console.log('all done!')
       socket.emit("complete", '');
-      saveToFile(filtered)
+
       faceapi.tf.engine().endScope();
+      setTimeout(() => {
+        saveToFile(filtered)
+      }, 8000);
+   
 
     } else {
       socket.emit("errorMessage", 'Process already running. Please wait');
@@ -90,7 +94,7 @@ app.get('/test', async (req, res) => {
 app.get('/find', async (req, res) => {
   faceapi.tf.engine().startScope();
   const url = req.query.imgUrl
-  console.log('finding:'+url)
+  console.log('finding:' + url)
   // if memory leak continiues. try moving these models out of function
   let faceRecognitionNet = await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
   let ssdMobilenetv1 = await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
@@ -116,7 +120,7 @@ app.get('/find', async (req, res) => {
   const detections = await faceapi.detectAllFaces(image, faceDetectorOptions).withFaceLandmarks(true).withFaceDescriptors()
   const resizedDetections = await faceapi.resizeResults(detections, displaySize)
   const results = await resizedDetections.map((d) => faceMatcher.findBestMatch(d.descriptor))
-  console.log('found:'+results)
+  console.log('found:' + results)
   res.setHeader('Content-Type', 'application/json');
   res.send(JSON.stringify(results));
   faceapi.tf.engine().endScope();
