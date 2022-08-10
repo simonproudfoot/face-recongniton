@@ -17,7 +17,6 @@ const { cos } = require('@tensorflow/tfjs');
 
 const { Canvas, Image, ImageData } = canvas;
 faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
-
 let processing = false
 //require('@tensorflow/tfjs-node');
 const app = express()
@@ -25,7 +24,6 @@ let port = process.env.PORT || 3000
 app.use(cors())
 
 const server = http.createServer(app);
-//const { Server } = require("socket.io");
 const io = require('socket.io')(server, {
   cors: {
     origin: '*',
@@ -70,16 +68,11 @@ io.on('connection', async (socket) => {
         0.6
       );
 
-
-
-      // // if (hasErrors) {
-      // //   socket.emit("errorMessage", 'Done, but with errors. Some images failed to load. Please check for missing images');
-      // // }
       hasErrors = false
       processing = false
       console.log('all done!')
       socket.emit("complete", '');
-      // saveToFile(filtered)
+      saveToFile(filtered)
       faceapi.tf.engine().endScope();
 
     } else {
@@ -89,12 +82,15 @@ io.on('connection', async (socket) => {
 
 });
 
-
+app.get('/test', async (req, res) => {
+  res.send(`I'm here!!!`)
+})
 
 // FIND FACES
 app.get('/find', async (req, res) => {
   faceapi.tf.engine().startScope();
   const url = req.query.imgUrl
+  console.log('finding:'+url)
   // if memory leak continiues. try moving these models out of function
   let faceRecognitionNet = await faceapi.nets.faceRecognitionNet.loadFromDisk(path.join(__dirname, 'models'));
   let ssdMobilenetv1 = await faceapi.nets.ssdMobilenetv1.loadFromDisk(path.join(__dirname, 'models'));
@@ -120,17 +116,14 @@ app.get('/find', async (req, res) => {
   const detections = await faceapi.detectAllFaces(image, faceDetectorOptions).withFaceLandmarks(true).withFaceDescriptors()
   const resizedDetections = await faceapi.resizeResults(detections, displaySize)
   const results = await resizedDetections.map((d) => faceMatcher.findBestMatch(d.descriptor))
-
+  console.log('found:'+results)
   res.setHeader('Content-Type', 'application/json');
-  res.end(JSON.stringify(results));
+  res.send(JSON.stringify(results));
   faceapi.tf.engine().endScope();
 })
 
 async function loadLabeledImages(url, socket) {
-
   const data = await fetch(url + '/wp-json/acf/v3/options/face-library').then((data) => data.json());
-  //const data = await fetch('https://lp-picture-library.greenwich-design-projects.co.uk//wp-json/acf/v3/options/face-library').then((data) => data.json());
-
   const images = await data.acf['face-library']
   let total = 0
   socket.emit("totalFaces", images.length - 1);
@@ -139,8 +132,6 @@ async function loadLabeledImages(url, socket) {
       const descriptions = []
       if (label.image.filesize > 0 && label.image.mime_type == 'image/jpeg') {
         const img = await canvas.loadImage(label.image.sizes.medium)
-
-        //    socket.emit("countDown", total++);
         const detections = await faceapi.detectSingleFace(img).withFaceLandmarks(true).withFaceDescriptor()
         if (img && detections != undefined && detections.descriptor != undefined && label.name != undefined) {
 
