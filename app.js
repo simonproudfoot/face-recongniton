@@ -105,29 +105,25 @@ async function ProcessFaceData(labeledFaceDescriptors, socket) {
   }, 1000);
 }
 app.get('/seedata', async (req, res) => {
-  let date;
+
   let data = await savedData
   // fetch file details
-  fs.stat("./savedFaceSearch.json", (err, stats) => {
+  await fs.stat("./savedFaceSearch.json", (err, stats) => {
     if (err) {
       console.log(err)
       throw err;
     }
-  //  console.log(stats)
+    //  console.log(stats)
 
 
     var event = new Date(stats.mtime);
-    console.log(event.toLocaleString('en-GB', { timeZone: 'Europe/London' }));
+    let date = { lastModified: event.toLocaleString('en-GB', { timeZone: 'Europe/London' }) }
 
-    data.unshift({lastModified: event.toLocaleString('en-GB', { timeZone: 'Europe/London' })})
+
     res.setHeader('Content-Type', 'application/json');
-    res.send(JSON.stringify(data));
-    // print file last modified date
-    // console.log(`File Data Last Modified: ${stats.mtime}`);
-    // console.log(`File Status Last Modified: ${stats.ctime}`);
+    res.send(JSON.stringify([date, ...data]));
   });
-
-
+  
 
 })
 // FIND FACES
