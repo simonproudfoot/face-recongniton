@@ -197,46 +197,42 @@ app.get('/search-shows', async (req, res) => {
     })
   })
 
-
   // https://lp-picture-library.greenwich-design-projects.co.uk/wp-json/wp/v2/shows?_embed&_fields=title.rendered,acf.epsodes,acf.episodes.episode.series,acf.episodes.episode.episode_number,acf.episodes.episode,%20acf.episodes.episode.series,acf.episodes.episode.episode_number,acf.episodes.episode.episode_image.sizes.medium_large,acf.episodes.episode.images.sizes.medium_large
+  // shows.forEach((x) => {
+  //   if (x.acf.epsodes) {
+  //     x.acf.epsodes.forEach((y) => {
+  //       let images = y.episode.images
+  //       if (images && images.length) {
+  //         images.forEach(async (z) => {
+  //           z['episode'] = y.episode.episode_title
+  //           z['show'] = y.episode.show
+  //           z['episode_number'] = y.episode.episode_number
+  //           try {
+  //             let fullImg = await fetch(url + '/wp-json/wp/v2/media/' + z.id + '/?_fields=acf').then((data) => data.json());
+  //             if (typeof fullImg.acf.featured_cast === 'string' && fullImg.acf && fullImg.acf.featured_cast && fullImg.acf.featured_cast.toLowerCase().includes(keyword)) {
+  //               let unique = searchedImages.find(x => x.id == z.id) ? false : true
+  //               if (unique) {
+  //                 searchedImages.push(z)
+  //               }
+  //               let uniqueShow = searchedShows.find(o => o.id == x.id) ? false : true
 
-  shows.forEach((x) => {
-    if (x.acf.epsodes) {
-      x.acf.epsodes.forEach((y) => {
-        let images = y.episode.images
-        if (images && images.length) {
-          images.forEach(async (z) => {
-            z['episode'] = y.episode.episode_title
-            z['show'] = y.episode.show
-            z['episode_number'] = y.episode.episode_number
+  //               if (uniqueShow) {
+  //                 searchedShows.push(x)
+  //               }
+  //               let uniqueEpisode = searchedEpisodes.find(o => o.episode_title == y.episode.episode_title) ? false : true
 
-            try {
-              let fullImg = await fetch(url + '/wp-json/wp/v2/media/' + z.id + '/?_fields=acf').then((data) => data.json());
+  //               if (uniqueEpisode) {
+  //                 searchedEpisodes.push(y.episode)
+  //               }
+  //             }
+  //           } catch (error) {
 
-              if (typeof fullImg.acf.featured_cast === 'string' && fullImg.acf && fullImg.acf.featured_cast && fullImg.acf.featured_cast.toLowerCase().includes(keyword)) {
-                let unique = searchedImages.find(x => x.id == z.id) ? false : true
-                if (unique) {
-                  searchedImages.push(z)
-                }
-                let uniqueShow = searchedShows.find(o => o.id == x.id) ? false : true
-
-                if (uniqueShow) {
-                  searchedShows.push(x)
-                }
-                let uniqueEpisode = searchedEpisodes.find(o => o.episode_title == y.episode.episode_title) ? false : true
-
-                if (uniqueEpisode) {
-                  searchedEpisodes.push(y.episode)
-                }
-              }
-            } catch (error) {
-
-            }
-          })
-        }
-      })
-    }
-  })
+  //           }
+  //         })
+  //       }
+  //     })
+  //   }
+  // })
   let searchedShowsFiltered = searchedShows.map(({ title, _embedded, link }) => ({ title, _embedded, link }));
   res.setHeader('Content-Type', 'application/json');
   res.send(JSON.stringify({ episodes: searchedEpisodes, shows: searchedShowsFiltered, images: searchedImages }));
