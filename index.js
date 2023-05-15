@@ -69,7 +69,7 @@ app.get('/update', async (req, res) => {
 
 
 async function loadLabeledImages() {
-  const data = await fetch('https://lp-picture-library.greenwich-design-projects.co.uk/wp-json/acf/v3/options/face-library').then((data) => data.json());
+  const data = await fetch('https://press.limepictures.com/wp-json/acf/v3/options/face-library').then((data) => data.json());
   const images = await data.acf['face-library']
   return Promise.all(
     images.map(async label => {
